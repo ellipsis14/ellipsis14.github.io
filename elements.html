@@ -1,18 +1,821 @@
+
 <!DOCTYPE HTML>
 <!--
-	Solid State by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+	RK-Portfolio — Digital Twin Lab (blog + interactive works)
+	Base theme: Solid State by HTML5 UP (html5up.net) — CCA 3.0
+	Page-specific styles/scripts are self-contained below so this file can be
+	dropped in without touching assets/css/main.css.
 -->
-<html>
+<html lang="en">
 	<head>
-		<title>Elements - Solid State by HTML5 UP</title>
+		<title>Digital Twin Lab &mdash; RK</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<meta name="description" content="Notes, models and runnable browser experiments on digital twins: physics-based models, state estimation, calibration and predictive maintenance." />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+
+		<style>
+		/* =====================================================================
+		   Digital Twin Lab — page styles
+		   Palette is inherited from the site theme:
+		     bg #2e3141 · panel #353849 · accent #4c5c96 · fg #ffffff
+		   Series colours (charts): measured #f0b429 · twin #8b9cf0 · residual #4fd1c5
+		   ===================================================================== */
+
+		.dt {
+			--bg:        #2e3141;
+			--panel:     #353849;
+			--panel-2:   #3d4051;
+			--line:      rgba(255,255,255,0.125);
+			--line-2:    rgba(255,255,255,0.25);
+			--fg:        #ffffff;
+			--muted:     rgba(255,255,255,0.55);
+			--faint:     rgba(255,255,255,0.35);
+			--accent:    #4c5c96;
+			--accent-2:  #8b9cf0;
+			--measured:  #f0b429;
+			--residual:  #4fd1c5;
+			--danger:    #e2725b;
+			--radius:    5px;
+			--mono:      'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, 'Courier New', monospace;
+		}
+
+		/* The base theme styles every bare <button> as a 3.75em-tall pill with an
+		   inset 2px ring and `color: #fff !important`. Undo that for this page's
+		   own controls before restyling them — hence the !important on colours. */
+		.dt .dt-chip,
+		.dt .dt-tab,
+		.dt .dt-btn,
+		.dt .dt-copy {
+			height: auto;
+			line-height: 1.4;
+			box-shadow: none;
+			white-space: nowrap;
+			margin: 0;
+		}
+
+		/* Reading progress ------------------------------------------------- */
+		.dt-progress {
+			position: fixed;
+			top: 0; left: 0;
+			height: 3px;
+			width: 0;
+			background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+			z-index: 10001;
+			transition: width 0.1s linear;
+		}
+
+		/* Layout ------------------------------------------------------------ */
+		.dt-shell {
+			margin: 0 auto;
+			max-width: 74em;
+			padding: 0 2.5em;
+		}
+		.dt-shell.narrow { max-width: 55em; }
+
+		.dt-section { padding: 4em 0; }
+		.dt-section + .dt-section { border-top: solid 1px var(--line); }
+
+		/* Hero -------------------------------------------------------------- */
+		.dt-hero {
+			padding: 11em 0 3.5em 0;   /* matches the theme's #wrapper > header rhythm */
+			background:
+				radial-gradient(1100px 420px at 15% -10%, rgba(139,156,240,0.16), transparent 60%),
+				radial-gradient(900px 380px at 88% 0%, rgba(79,209,197,0.10), transparent 60%);
+			border-bottom: solid 1px var(--line);
+		}
+		.dt-eyebrow {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.6em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.7rem;
+			font-weight: 700;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+			color: var(--accent-2);
+			border: solid 1px rgba(139,156,240,0.4);
+			border-radius: 2em;
+			padding: 0.45em 1.1em;
+			margin-bottom: 1.5em;
+		}
+		.dt-eyebrow .dot {
+			width: 6px; height: 6px;
+			border-radius: 50%;
+			background: var(--residual);
+			box-shadow: 0 0 0 0 rgba(79,209,197,0.7);
+			animation: dt-pulse 2.4s infinite;
+		}
+		@keyframes dt-pulse {
+			0%   { box-shadow: 0 0 0 0 rgba(79,209,197,0.55); }
+			70%  { box-shadow: 0 0 0 9px rgba(79,209,197,0); }
+			100% { box-shadow: 0 0 0 0 rgba(79,209,197,0); }
+		}
+		.dt-hero h1 {
+			font-size: 3.1rem;
+			line-height: 1.12;
+			letter-spacing: 0.02em;
+			margin: 0 0 0.6em 0;
+			max-width: 24ch;
+		}
+		.dt-hero .lead {
+			font-size: 1.15rem;
+			line-height: 1.75;
+			color: rgba(255,255,255,0.78);
+			max-width: 62ch;
+			margin-bottom: 2em;
+		}
+		.dt-hero-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 2.25em;
+			padding-top: 1.75em;
+			border-top: solid 1px var(--line);
+			font-size: 0.9rem;
+		}
+		.dt-hero-meta .k {
+			display: block;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.65rem;
+			font-weight: 700;
+			letter-spacing: 0.2em;
+			text-transform: uppercase;
+			color: var(--faint);
+			margin-bottom: 0.35em;
+		}
+		.dt-hero-meta .v { color: var(--fg); font-weight: 600; }
+
+		/* Toolbar: search + tag filters ------------------------------------- */
+		.dt-toolbar {
+			position: -webkit-sticky;
+			position: sticky;
+			top: 3.5em;          /* clears the fixed #header (3.5em tall, z-index 10000) */
+			z-index: 500;
+			background: rgba(46,49,65,0.94);
+			-webkit-backdrop-filter: saturate(140%) blur(10px);
+			backdrop-filter: saturate(140%) blur(10px);
+			border-bottom: solid 1px var(--line);
+		}
+		.dt-toolbar-inner {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 1em;
+			padding: 1.1em 0;
+		}
+		.dt-search {
+			position: relative;
+			flex: 0 0 20em;
+			max-width: 100%;
+		}
+		.dt-search svg {
+			position: absolute;
+			left: 0.9em; top: 50%;
+			transform: translateY(-50%);
+			width: 14px; height: 14px;
+			fill: var(--faint);
+			pointer-events: none;
+		}
+		.dt input[type="search"].dt-search-input {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 100%;
+			height: 2.85em;
+			margin: 0;
+			padding: 0 1em 0 2.6em;
+			background: var(--panel);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			color: var(--fg);
+			font-size: 0.95rem;
+		}
+		.dt input[type="search"].dt-search-input:focus {
+			outline: 0;
+			border-color: var(--accent-2);
+			box-shadow: 0 0 0 3px rgba(139,156,240,0.16);
+		}
+		.dt input[type="search"].dt-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+		.dt-chips {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5em;
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+		.dt-chips li { margin: 0; padding: 0; }
+		.dt-chip {
+			display: inline-block;
+			cursor: pointer;
+			border: solid 1px var(--line);
+			background: transparent;
+			border-radius: 2em;
+			padding: 0.45em 1em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.68rem;
+			font-weight: 700;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.7) !important;
+			transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+		}
+		.dt-chip:hover { color: var(--fg) !important; border-color: var(--line-2); }
+		.dt-chip[aria-pressed="true"] {
+			background: var(--accent);
+			border-color: var(--accent);
+			color: #fff !important;
+		}
+		.dt-count { margin-left: auto; font-size: 0.85rem; color: var(--faint); }
+
+		/* Section headings -------------------------------------------------- */
+		.dt-h {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 1.5em;
+			margin-bottom: 2em;
+			padding-bottom: 0.9em;
+			border-bottom: solid 1px var(--line);
+		}
+		.dt-h h2 {
+			font-size: 1.05rem;
+			letter-spacing: 0.24em;
+			text-transform: uppercase;
+			font-weight: 700;
+			margin: 0;
+		}
+		.dt-h .hint { font-size: 0.85rem; color: var(--faint); }
+
+		/* Article ----------------------------------------------------------- */
+		.dt-article { }
+		.dt-badges { display: flex; flex-wrap: wrap; gap: 0.5em; margin-bottom: 1.25em; }
+		.dt-badge {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.62rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			padding: 0.4em 0.85em;
+			border-radius: 3px;
+			border: solid 1px var(--line-2);
+			color: rgba(255,255,255,0.75);
+		}
+		.dt-badge.live {
+			border-color: rgba(79,209,197,0.45);
+			background: rgba(79,209,197,0.10);
+			color: var(--residual);
+		}
+		.dt-badge.feature {
+			border-color: rgba(139,156,240,0.5);
+			background: rgba(139,156,240,0.12);
+			color: var(--accent-2);
+		}
+		.dt-article h3.title {
+			font-size: 2rem;
+			line-height: 1.25;
+			margin-bottom: 0.5em;
+			max-width: 34ch;
+		}
+		.dt-byline {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.75em;
+			font-size: 0.85rem;
+			color: var(--muted);
+			margin-bottom: 2em;
+		}
+		.dt-byline .sep { color: var(--faint); }
+		.dt-avatar {
+			width: 30px; height: 30px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.66rem;
+			font-weight: 700;
+			letter-spacing: 0.06em;
+			color: #fff;
+		}
+		.dt-article p { line-height: 1.85; }
+		.dt-article .standfirst {
+			font-size: 1.08rem;
+			line-height: 1.85;
+			color: rgba(255,255,255,0.82);
+			border-left: solid 3px var(--accent);
+			padding-left: 1.5em;
+			margin-bottom: 2.5em;
+		}
+		.dt-article h4 {
+			font-size: 0.95rem;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			margin: 2.5em 0 1em 0;
+			color: var(--fg);
+		}
+
+		/* Interactive figure ------------------------------------------------ */
+		.dt-figure {
+			background: var(--panel);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			margin: 0 0 2em 0;
+			overflow: hidden;
+		}
+		.dt-figure-bar {
+			display: flex;
+			align-items: center;
+			gap: 0.85em;
+			padding: 0.9em 1.25em;
+			background: rgba(0,0,0,0.14);
+			border-bottom: solid 1px var(--line);
+		}
+		.dt-figure-bar .name {
+			font-family: var(--mono);
+			font-size: 0.78rem;
+			letter-spacing: 0.04em;
+			color: rgba(255,255,255,0.72);
+		}
+		.dt-status {
+			margin-left: auto;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.55em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.62rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			padding: 0.4em 0.85em;
+			border-radius: 2em;
+			border: solid 1px currentColor;
+		}
+		.dt-status .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+		.dt-status.ok    { color: var(--residual); }
+		.dt-status.watch { color: var(--measured); }
+		.dt-status.alert { color: var(--danger); }
+
+		.dt-figure-body { padding: 1.5em; }
+
+		/* KPI tiles --------------------------------------------------------- */
+		.dt-kpis {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(9.5em, 1fr));
+			gap: 1px;
+			background: var(--line);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			overflow: hidden;
+			margin-bottom: 1.5em;
+		}
+		.dt-kpi { background: var(--panel-2); padding: 1em 1.15em; }
+		.dt-kpi .k {
+			display: block;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.6rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			color: var(--faint);
+			margin-bottom: 0.5em;
+			white-space: nowrap;
+		}
+		.dt-kpi .v {
+			font-family: var(--mono);
+			font-size: 1.4rem;
+			line-height: 1;
+			font-variant-numeric: tabular-nums;
+			color: var(--fg);
+		}
+		.dt-kpi .v .u { font-size: 0.72rem; color: var(--faint); margin-left: 0.25em; }
+		.dt-kpi.is-measured .v { color: var(--measured); }
+		.dt-kpi.is-twin .v     { color: var(--accent-2); }
+		.dt-kpi.is-resid .v    { color: var(--residual); }
+
+		/* Charts ------------------------------------------------------------ */
+		.dt-canvas-wrap {
+			position: relative;
+			background: rgba(0,0,0,0.18);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			padding: 0.75em;
+		}
+		.dt-canvas-wrap + .dt-canvas-wrap { margin-top: 0.75em; }
+		.dt-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+		.dt-legend {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1.4em;
+			margin-top: 0.9em;
+			padding: 0 0.25em;
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
+		.dt-legend span { display: inline-flex; align-items: center; gap: 0.5em; }
+		.dt-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+		.dt-legend i.dash {
+			height: 0;
+			border-top: dashed 2px currentColor;
+			border-radius: 0;
+		}
+
+		/* Controls ---------------------------------------------------------- */
+		.dt-controls {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(13.5em, 1fr));
+			gap: 1.25em 1.75em;
+			margin-top: 1.75em;
+			padding-top: 1.75em;
+			border-top: solid 1px var(--line);
+		}
+		.dt-control label {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 0.75em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.63rem;
+			font-weight: 700;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			color: var(--muted);
+			margin-bottom: 0.7em;
+		}
+		.dt-control label .out {
+			font-family: var(--mono);
+			font-size: 0.82rem;
+			letter-spacing: 0;
+			text-transform: none;
+			font-weight: 400;
+			font-variant-numeric: tabular-nums;
+			color: var(--fg);
+		}
+		.dt input[type="range"] {
+			-webkit-appearance: none;
+			appearance: none;
+			display: block;
+			width: 100%;
+			height: 4px;
+			margin: 0;
+			padding: 0;
+			border: 0;
+			border-radius: 2px;
+			background: rgba(255,255,255,0.16);
+			cursor: pointer;
+		}
+		.dt input[type="range"]:focus { outline: 0; }
+		.dt input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			width: 15px; height: 15px;
+			border-radius: 50%;
+			background: var(--accent-2);
+			border: solid 2px var(--bg);
+			box-shadow: 0 0 0 1px var(--accent-2);
+			cursor: pointer;
+		}
+		.dt input[type="range"]::-moz-range-thumb {
+			width: 13px; height: 13px;
+			border: solid 2px var(--bg);
+			border-radius: 50%;
+			background: var(--accent-2);
+			box-shadow: 0 0 0 1px var(--accent-2);
+			cursor: pointer;
+		}
+		.dt input[type="range"]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(139,156,240,0.28); }
+
+		.dt-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.6em;
+			margin-top: 1.75em;
+			padding-top: 1.5em;
+			border-top: solid 1px var(--line);
+		}
+		.dt-btn {
+			-webkit-appearance: none;
+			appearance: none;
+			cursor: pointer;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.66rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			padding: 0.8em 1.4em;
+			border-radius: var(--radius);
+			border: solid 1px var(--line-2);
+			background: transparent;
+			color: var(--fg) !important;
+			transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+		}
+		.dt-btn:hover { border-color: var(--fg); }
+		.dt-btn.primary { background: var(--accent); border-color: var(--accent); }
+		.dt-btn.primary:hover { background: #53639e; border-color: #53639e; }
+		.dt-btn[aria-pressed="true"] {
+			background: rgba(79,209,197,0.14);
+			border-color: var(--residual);
+			color: var(--residual) !important;
+		}
+		.dt-btn.warn:hover { border-color: var(--danger); color: var(--danger) !important; }
+
+		.dt-caption {
+			font-size: 0.85rem;
+			line-height: 1.7;
+			color: var(--muted);
+			margin: 1.25em 0 0 0;
+			padding-left: 1em;
+			border-left: solid 2px var(--line-2);
+		}
+		.dt-caption b { color: rgba(255,255,255,0.85); font-weight: 600; }
+
+		/* Tabs -------------------------------------------------------------- */
+		.dt-tabs {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0;
+			margin: 0 0 -1px 0;
+			padding: 0;
+			list-style: none;
+			border-bottom: solid 1px var(--line);
+		}
+		.dt-tabs li { margin: 0; padding: 0; }
+		.dt-tab {
+			cursor: pointer;
+			background: transparent;
+			border: 0;
+			border-bottom: solid 2px transparent;
+			padding: 0.9em 1.35em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.68rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			color: var(--faint) !important;
+			transition: color 0.2s ease, border-color 0.2s ease;
+		}
+		.dt-tab:hover { color: var(--fg) !important; }
+		.dt-tab[aria-selected="true"] { color: var(--fg) !important; border-bottom-color: var(--accent-2); }
+		.dt-panel { padding: 2em 0 0 0; }
+		.dt-panel[hidden] { display: none; }
+
+		/* Equations & code -------------------------------------------------- */
+		.dt-eq {
+			font-family: var(--mono);
+			font-size: 0.92rem;
+			line-height: 2;
+			background: rgba(0,0,0,0.2);
+			border: solid 1px var(--line);
+			border-left: solid 3px var(--accent-2);
+			border-radius: var(--radius);
+			padding: 1.25em 1.5em;
+			margin: 1.5em 0;
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+		.dt-code {
+			position: relative;
+			background: rgba(0,0,0,0.24);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			margin: 1.5em 0;
+			overflow: hidden;
+		}
+		.dt-code-bar {
+			display: flex;
+			align-items: center;
+			gap: 0.75em;
+			padding: 0.7em 1.1em;
+			border-bottom: solid 1px var(--line);
+			font-family: var(--mono);
+			font-size: 0.74rem;
+			color: var(--faint);
+		}
+		.dt-copy {
+			margin-left: auto;
+			cursor: pointer;
+			background: transparent;
+			border: solid 1px var(--line-2);
+			border-radius: 3px;
+			color: var(--muted) !important;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.58rem;
+			font-weight: 700;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			padding: 0.35em 0.7em;
+		}
+		.dt-copy:hover { color: var(--fg) !important; border-color: var(--fg); }
+		.dt-code pre {
+			margin: 0;
+			padding: 1.25em 1.4em;
+			overflow-x: auto;
+			background: transparent;
+			border: 0;
+			font-family: var(--mono);
+			font-size: 0.82rem;
+			line-height: 1.8;
+			color: rgba(255,255,255,0.85);
+		}
+		.dt-code .c  { color: var(--faint); font-style: italic; }
+		.dt-code .kw { color: var(--accent-2); }
+		.dt-code .nu { color: var(--measured); }
+		.dt-code .st { color: var(--residual); }
+
+		/* Data table -------------------------------------------------------- */
+		.dt-table-wrap { overflow-x: auto; margin: 1.5em 0; }
+		.dt table.dt-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin: 0;
+			font-size: 0.92rem;
+		}
+		/* Theme adds zebra striping + row borders to every table; this one is flat. */
+		.dt table.dt-table tbody tr { background-color: transparent; border: 0; }
+		.dt table.dt-table thead { border-bottom: 0; }
+		.dt table.dt-table th {
+			text-align: left;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.62rem;
+			font-weight: 700;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+			color: var(--faint);
+			padding: 0.85em 1em;
+			border-bottom: solid 1px var(--line-2);
+			white-space: nowrap;
+		}
+		.dt table.dt-table td {
+			padding: 0.85em 1em;
+			border-bottom: solid 1px var(--line);
+			color: rgba(255,255,255,0.8);
+			vertical-align: top;
+		}
+		.dt table.dt-table td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+		.dt table.dt-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+		/* Post grid --------------------------------------------------------- */
+		.dt-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(19em, 1fr));
+			gap: 1.5em;
+		}
+		.dt-card {
+			display: flex;
+			flex-direction: column;
+			background: var(--panel);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			padding: 1.6em;
+			transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+		}
+		.dt-card:hover {
+			transform: translateY(-4px);
+			border-color: var(--line-2);
+			background: var(--panel-2);
+		}
+		.dt-card .top {
+			display: flex;
+			align-items: center;
+			gap: 0.75em;
+			margin-bottom: 1.1em;
+			font-family: var(--mono);
+			font-size: 0.72rem;
+			color: var(--faint);
+		}
+		.dt-card .top .live-dot {
+			width: 6px; height: 6px; border-radius: 50%;
+			background: var(--residual);
+			flex: 0 0 auto;
+		}
+		.dt-card h3 {
+			font-size: 1.1rem;
+			line-height: 1.4;
+			margin-bottom: 0.75em;
+		}
+		.dt-card h3 a { border-bottom: 0; }
+		.dt-card h3 a:hover { color: var(--accent-2); }
+		.dt-card p {
+			font-size: 0.92rem;
+			line-height: 1.75;
+			color: var(--muted);
+			margin-bottom: 1.25em;
+		}
+		.dt-card .tags {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.4em;
+			margin: auto 0 1.25em 0;
+			padding: 0;
+			list-style: none;
+		}
+		.dt-card .tags li {
+			margin: 0; padding: 0.3em 0.7em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.58rem;
+			font-weight: 700;
+			letter-spacing: 0.14em;
+			text-transform: uppercase;
+			color: var(--muted);
+			border: solid 1px var(--line);
+			border-radius: 2em;
+		}
+		.dt-card .go {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.64rem;
+			font-weight: 700;
+			letter-spacing: 0.18em;
+			text-transform: uppercase;
+			border-bottom: 0;
+			color: var(--accent-2);
+		}
+		.dt-card .go:hover { color: var(--fg); }
+		.dt-card[hidden] { display: none; }
+
+		.dt-empty {
+			display: none;
+			text-align: center;
+			padding: 3.5em 1em;
+			border: dashed 1px var(--line-2);
+			border-radius: var(--radius);
+			color: var(--muted);
+		}
+		.dt-empty.show { display: block; }
+
+		/* Subscribe --------------------------------------------------------- */
+		.dt-cta {
+			background: var(--panel);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			padding: 2.5em;
+			text-align: center;
+		}
+		.dt-cta h2 { font-size: 1.35rem; margin-bottom: 0.6em; }
+		.dt-cta p { color: var(--muted); max-width: 48ch; margin: 0 auto 1.75em auto; line-height: 1.8; }
+		.dt-cta form {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.6em;
+			justify-content: center;
+			max-width: 30em;
+			margin: 0 auto;
+		}
+		.dt .dt-cta input[type="email"] {
+			-webkit-appearance: none;
+			appearance: none;
+			flex: 1 1 15em;
+			height: 2.85em;
+			margin: 0;
+			padding: 0 1em;
+			background: rgba(0,0,0,0.2);
+			border: solid 1px var(--line);
+			border-radius: var(--radius);
+			color: var(--fg);
+		}
+		.dt .dt-cta input[type="email"]:focus { outline: 0; border-color: var(--accent-2); }
+
+		/* The theme gives #footer no top edge; this page needs the separation. */
+		.dt #footer { border-top: solid 1px var(--line); }
+
+		/* Responsive -------------------------------------------------------- */
+		@media screen and (max-width: 1280px) {
+			.dt-shell { padding: 0 2em; }
+		}
+		@media screen and (max-width: 980px) {
+			.dt-hero { padding-top: 8em; }
+			.dt-hero h1 { font-size: 2.45rem; }
+			.dt-article h3.title { font-size: 1.65rem; }
+			.dt-toolbar { position: static; }
+		}
+		@media screen and (max-width: 736px) {
+			.dt-shell { padding: 0 1.5em; }
+			.dt-section { padding: 3em 0; }
+			.dt-hero { padding: 7em 0 2.5em 0; }
+			.dt-hero h1 { font-size: 1.95rem; }
+			.dt-hero .lead { font-size: 1rem; }
+			.dt-hero-meta { gap: 1.25em 2em; }
+			.dt-search { flex: 1 1 100%; }
+			.dt-count { margin-left: 0; flex: 1 1 100%; }
+			.dt-figure-body { padding: 1em; }
+			.dt-kpi .v { font-size: 1.15rem; }
+			.dt-article .standfirst { padding-left: 1.1em; }
+			.dt-cta { padding: 1.75em; }
+			.dt-tab { padding: 0.8em 0.9em; font-size: 0.62rem; letter-spacing: 0.12em; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.dt-eyebrow .dot { animation: none; }
+			.dt-card:hover { transform: none; }
+			.dt-progress { transition: none; }
+		}
+		</style>
 	</head>
-	<body class="is-preload">
+	<body class="is-preload dt">
+
+		<!-- Reading progress -->
+			<div class="dt-progress" id="dt-progress" aria-hidden="true"></div>
 
 		<!-- Page Wrapper -->
 			<div id="page-wrapper">
@@ -33,8 +836,10 @@
 								<li><a href="index.html">Home</a></li>
 								<li><a href="generic.html">Yog</a></li>
 								<li><a href="elements.html">Vigyaan</a></li>
+								<li><a href="elements1.html">Digital Twin Lab</a></li>
 								<li><a href="rkinterests.html">Maker-space</a></li>
-								<li><a href="#">Sign Up</a></li>
+								<li><a href="rkpub.html">Publications</a></li>
+								<li><a href="CV.html">CV</a></li>
 							</ul>
 							<a href="#" class="close">Close</a>
 						</div>
@@ -42,331 +847,441 @@
 
 				<!-- Wrapper -->
 					<section id="wrapper">
-						<header>
-							<div class="inner">
-								<h2>Vigyaan</h2>
-								<p>One originates from IQ (अपरा विद्या ) and another rises from Rithambhara (SQ) (परा विद्या)</p>
+
+						<!-- Hero ============================================= -->
+							<div class="dt-hero">
+								<div class="dt-shell">
+									<span class="dt-eyebrow"><span class="dot"></span> Digital Twin Lab</span>
+									<h1>Models that stay honest about the machine they describe.</h1>
+									<p class="lead">
+										A working notebook on digital twins &mdash; physics-based models, state
+										estimation, online calibration and residual-driven diagnostics. Every entry
+										ships with something you can actually run in the browser: turn the knobs,
+										inject a fault, and watch the twin either track the asset or lose it.
+									</p>
+									<div class="dt-hero-meta">
+										<div><span class="k">Author</span><span class="v">Rahul Kumar (RK)</span></div>
+										<div><span class="k">Focus</span><span class="v">Simulation &middot; Estimation &middot; Optimization</span></div>
+										<div><span class="k">Entries</span><span class="v" id="dt-total">6</span></div>
+										<div><span class="k">Last updated</span><span class="v">25 July 2026</span></div>
+									</div>
+								</div>
 							</div>
-						</header>
 
-						<!-- Content -->
-							<div class="wrapper">
-								<div class="inner">
+						<!-- Toolbar ========================================== -->
+							<div class="dt-toolbar">
+								<div class="dt-shell">
+									<div class="dt-toolbar-inner">
+										<div class="dt-search">
+											<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.2 9.8a5.5 5.5 0 1 0-1.4 1.4l3.3 3.3a1 1 0 0 0 1.4-1.4l-3.3-3.3zM6.5 10a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+											<input type="search" id="dt-q" class="dt-search-input" placeholder="Search entries, tags, methods&hellip;" aria-label="Search entries" autocomplete="off" />
+										</div>
+										<ul class="dt-chips" id="dt-filters" role="group" aria-label="Filter entries by topic">
+											<li><button type="button" class="dt-chip" data-tag="all" aria-pressed="true">All</button></li>
+											<li><button type="button" class="dt-chip" data-tag="interactive" aria-pressed="false">Interactive</button></li>
+											<li><button type="button" class="dt-chip" data-tag="physics" aria-pressed="false">Physics</button></li>
+											<li><button type="button" class="dt-chip" data-tag="estimation" aria-pressed="false">Estimation</button></li>
+											<li><button type="button" class="dt-chip" data-tag="ml" aria-pressed="false">ML</button></li>
+											<li><button type="button" class="dt-chip" data-tag="deployment" aria-pressed="false">Deployment</button></li>
+										</ul>
+										<span class="dt-count" id="dt-count" aria-live="polite"></span>
+									</div>
+								</div>
+							</div>
 
-									<section>
-										<h3 class="major">Prologue</h3>
-										<p>According to Vedas, there are two types of knowledge: <b>Para Vidya </b> and <b>Apara Vidya</b>. Apara Vidya is something that I practise and rehearse  to make my living.
-	                                       Mathematics in its abstract form helps me in understanding the 
+						<!-- ==================================================
+						     FEATURED ENTRY
+						     To publish a new interactive entry, duplicate this
+						     article block, swap the copy, and mount your own
+						     widget inside .dt-figure-body (canvas, WebGL, an
+						     <iframe> to a Plotly/Bokeh export, whatever).
+						     ================================================== -->
+							<div class="dt-section">
+								<div class="dt-shell narrow">
+
+									<article class="dt-article" id="entry-thermal">
+										<div class="dt-badges">
+											<span class="dt-badge feature">Featured</span>
+											<span class="dt-badge live">Live simulation</span>
+											<span class="dt-badge">Entry 06</span>
+										</div>
+
+										<h3 class="title">A thermal digital twin that catches a failing bearing before the alarm does</h3>
+
+										<div class="dt-byline">
+											<span class="dt-avatar" aria-hidden="true">RK</span>
+											<span>Rahul Kumar</span>
+											<span class="sep">&middot;</span>
+											<time datetime="2026-07-25">25 July 2026</time>
+											<span class="sep">&middot;</span>
+											<span>12 min read</span>
+											<span class="sep">&middot;</span>
+											<span>Physics &middot; Estimation</span>
+										</div>
+
+										<p class="standfirst">
+											A digital twin is not a 3-D model. It is a model kept in sync with a
+											physical asset by a stream of measurements &mdash; and the useful signal is
+											rarely the prediction itself. It is the <em>residual</em>: the part of
+											reality your model failed to explain. Below, a first-order thermal twin of
+											a pump bearing runs against a simulated asset. Drive it, then degrade the
+											bearing and watch where the information actually shows up.
 										</p>
-										<h4>Mundaka Upanishad</h4>
-										<blockquote>द्वे विद्ये वेदितव्ये इति ह् स्म यद्ब्रह्मविदो वदन्ति परा चैवापरा च |
-											<p>तत्रापरा ऋग्वेदो यजुर्वेदः सामवेदोऽथर्ववेदः शिक्षा कल्पो व्याकरणं निरुक्तं छन्दो ज्योतिषमिति |</p>
-										अथ परा यया तदक्षरमधिग्म्यते ||</blockquote>
-										<h4>Translation</h4>
-										<blockquote>There were two different kinds of knowledge to be acquired –
-'the higher knowledge' or Para Vidya (Sanskrit: परा विद्या )and 'the lower knowledge' or Apara Vidya. The lower knowledge consists of all textual knowledge - the four Vedas, the science of pronunciation etc., the code of rituals, grammar, etymology, metre and astrology. The higher knowledge is by which the immutable and the imperishable Atman is realized, which knowledge brings about the direct realization of the Supreme Reality, the source of All. The knowledge of the Atman is very subtle; it cannot be obtained out of one's own effort; the Atman cannot be intuitively apprehended by mere intellectual equipments. 
 
-										</blockquote>
-									</section>
+										<h4>The interactive</h4>
 
-									<section>
-										<h3 class="major">Must read literature</h3>
-										<div class="row">
-											<div class="col-6 col-12-medium">
-												<h4>परा विद्या </h4>
-												<ul>
-													<li>Swarved (Maharishi Sadafaldeo ji)</li></li>
-													<li>Bijak Bhasya (Maharishi Sadafaldeo ji).</li>
-													<li>Yogdarshan (by Maharishi Patanjali).</li>
-													<li>Yathartha Geeta (Swami Adgadanand ji).</li>
-													<li>HathYog Pradipika (Maharishi Karnad).</li>
-													<li>Vedas (Rig Ved, Sam Ved, Atharva Ved, Yajur Ved).
-													
-												</ul>
-												<h4>Alternate</h4>
-												<ul class="alt">
-													
-													<li>.</li>
-												
-												</ul>
+										<!-- Interactive figure ---------------------------------------- -->
+										<figure class="dt-figure">
+											<div class="dt-figure-bar">
+												<span class="name">twin://pump-04/bearing-thermal</span>
+												<span class="dt-status ok" id="dt-status"><span class="led"></span><span id="dt-status-text">Nominal</span></span>
 											</div>
-											<div class="col-6 col-12-medium">
-												<h4>अपरा विद्या </h4>
-												<ol>
-						                            <li>Newton Principia for common man (by S Chandrasekhar).</li>
-													<li>How to solve it.</li>
-													<li>The war of art.</li>
-													<li>Optimal Control(Fredi Troltzsch)</li>
-													<li>MRI Physics (Westbrook et al.).</li>
-													<li>Quantum Computation and Quantum Information (Nielsen et al.)</li>
-												</ol>
-												<h4>Icons</h4>
-												<p>This page is still under construction.</p>
-												<ul class="icons">
-													<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-													<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
-													<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
-													<li><a href="#" class="icon brands fa-github"><span class="label">Github</span></a></li>
-												</ul>
+											<div class="dt-figure-body">
+
+												<div class="dt-kpis">
+													<div class="dt-kpi is-measured">
+														<span class="k">Sensor</span>
+														<span class="v"><span id="kpi-meas">24.0</span><span class="u">&deg;C</span></span>
+													</div>
+													<div class="dt-kpi is-twin">
+														<span class="k">Twin estimate</span>
+														<span class="v"><span id="kpi-twin">24.0</span><span class="u">&deg;C</span></span>
+													</div>
+													<div class="dt-kpi is-resid">
+														<span class="k">Residual RMS</span>
+														<span class="v"><span id="kpi-rms">0.00</span><span class="u">K</span></span>
+													</div>
+													<div class="dt-kpi">
+														<span class="k">Health index</span>
+														<span class="v"><span id="kpi-health">100</span><span class="u">%</span></span>
+													</div>
+													<div class="dt-kpi">
+														<span class="k">Uptime</span>
+														<span class="v"><span id="kpi-clock">0.0</span><span class="u">min</span></span>
+													</div>
+												</div>
+
+												<div class="dt-canvas-wrap">
+													<canvas id="dt-chart" height="300" role="img"
+														aria-label="Streaming chart comparing measured bearing temperature against the digital twin estimate."></canvas>
+													<div class="dt-legend">
+														<span><i style="background:#f0b429"></i> Measured (sensor + noise)</span>
+														<span><i style="background:#8b9cf0"></i> Twin estimate</span>
+														<span style="color:rgba(255,255,255,0.35)"><i class="dash"></i> Alarm limit 85&nbsp;&deg;C</span>
+													</div>
+												</div>
+
+												<div class="dt-canvas-wrap">
+													<canvas id="dt-resid" height="120" role="img"
+														aria-label="Residual between measurement and twin estimate over time, with the anomaly threshold."></canvas>
+													<div class="dt-legend">
+														<span><i style="background:#4fd1c5"></i> Residual (measured &minus; twin)</span>
+														<span style="color:rgba(226,114,91,0.9)"><i class="dash"></i> Detection threshold &plusmn;1.5&nbsp;K</span>
+													</div>
+												</div>
+
+												<!-- Asset & twin controls -->
+												<div class="dt-controls">
+													<div class="dt-control">
+														<label for="c-load">Duty load <span class="out"><span id="o-load">60</span>%</span></label>
+														<input type="range" id="c-load" min="0" max="100" step="1" value="60" />
+													</div>
+													<div class="dt-control">
+														<label for="c-amb">Ambient <span class="out"><span id="o-amb">24</span>&nbsp;&deg;C</span></label>
+														<input type="range" id="c-amb" min="5" max="45" step="1" value="24" />
+													</div>
+													<div class="dt-control">
+														<label for="c-wear">Bearing wear <span class="out"><span id="o-wear">0</span>%</span></label>
+														<input type="range" id="c-wear" min="0" max="100" step="1" value="0" />
+													</div>
+													<div class="dt-control">
+														<label for="c-r">Twin R<sub>th</sub> <span class="out"><span id="o-r">0.42</span>&nbsp;K/W</span></label>
+														<input type="range" id="c-r" min="0.20" max="0.70" step="0.01" value="0.42" />
+													</div>
+													<div class="dt-control">
+														<label for="c-c">Twin C<sub>th</sub> <span class="out"><span id="o-c">120</span>&nbsp;J/K</span></label>
+														<input type="range" id="c-c" min="40" max="260" step="5" value="120" />
+													</div>
+													<div class="dt-control">
+														<label for="c-noise">Sensor noise <span class="out">&sigma;&nbsp;<span id="o-noise">0.30</span>&nbsp;K</span></label>
+														<input type="range" id="c-noise" min="0" max="1.5" step="0.05" value="0.30" />
+													</div>
+												</div>
+
+												<div class="dt-actions">
+													<button type="button" class="dt-btn primary" id="b-play">Pause</button>
+													<button type="button" class="dt-btn" id="b-cal" aria-pressed="false">Auto-calibrate: off</button>
+													<button type="button" class="dt-btn warn" id="b-fault">Inject step fault</button>
+													<button type="button" class="dt-btn" id="b-reset">Reset</button>
+												</div>
+
 											</div>
-										</div>
-										<h4>Actions</h4>
-										<div class="row">
-											<div class="col-6 col-12-medium">
-												<ul class="actions">
-													<li><a href="#" class="button primary">Default</a></li>
-													<li><a href="#" class="button">Default</a></li>
-												</ul>
-												<ul class="actions small">
-													<li><a href="#" class="button primary small">Small</a></li>
-													<li><a href="#" class="button small">Small</a></li>
-												</ul>
-												<ul class="actions stacked">
-													<li><a href="#" class="button primary">Default</a></li>
-													<li><a href="#" class="button">Default</a></li>
-												</ul>
-												<ul class="actions stacked small">
-													<li><a href="#" class="button primary small">Small</a></li>
-													<li><a href="#" class="button small">Small</a></li>
-												</ul>
-											</div>
-											<div class="col-6 col-12-medium">
-												<ul class="actions stacked">
-													<li><a href="#" class="button primary fit">Default</a></li>
-													<li><a href="#" class="button fit">Default</a></li>
-												</ul>
-												<ul class="actions stacked small">
-													<li><a href="#" class="button primary small fit">Small</a></li>
-													<li><a href="#" class="button small fit">Small</a></li>
-												</ul>
-											</div>
-										</div>
-										<h4>Pagination</h4>
-										<ul class="pagination">
-											<li><span class="button small disabled">Prev</span></li>
-											<li><a href="#" class="page active">1</a></li>
-											<li><a href="#" class="page">2</a></li>
-											<li><a href="#" class="page">3</a></li>
-											<li><span>&hellip;</span></li>
-											<li><a href="#" class="page">8</a></li>
-											<li><a href="#" class="page">9</a></li>
-											<li><a href="#" class="page">10</a></li>
-											<li><a href="#" class="button small">Next</a></li>
+										</figure>
+
+										<p class="dt-caption">
+											<b>What to try.</b> Leave the twin well-tuned and the residual sits inside the
+											noise band. Now drag <b>Bearing wear</b> up: the asset generates extra
+											friction heat the twin has no term for, so the residual walks off zero
+											<em>long before</em> the absolute temperature reaches the 85&nbsp;&deg;C alarm
+											limit. That lead time is the whole commercial argument for a twin. Then
+											enable <b>Auto-calibrate</b>: the twin absorbs the bias into an estimated
+											loss term, the residual collapses back into the noise &mdash; and the health
+											index becomes the thing that carries the fault signature instead.
+										</p>
+
+										<h4>How it works</h4>
+
+										<ul class="dt-tabs" id="dt-tabs" role="tablist">
+											<li><button type="button" class="dt-tab" id="tb-1" role="tab" aria-selected="true"  aria-controls="tp-1">Model</button></li>
+											<li><button type="button" class="dt-tab" id="tb-2" role="tab" aria-selected="false" aria-controls="tp-2">Calibration</button></li>
+											<li><button type="button" class="dt-tab" id="tb-3" role="tab" aria-selected="false" aria-controls="tp-3">Code</button></li>
+											<li><button type="button" class="dt-tab" id="tb-4" role="tab" aria-selected="false" aria-controls="tp-4">Validation</button></li>
 										</ul>
-									</section>
-<!-- 
-									<section>
-										<h3 class="major">Table</h3>
-										<h4>Default</h4>
-										<div class="table-wrapper">
-											<table>
-												<thead>
-													<tr>
-														<th>Name</th>
-														<th>Description</th>
-														<th>Price</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td>Item One</td>
-														<td>Ante turpis integer aliquet porttitor.</td>
-														<td>29.99</td>
-													</tr>
-													<tr>
-														<td>Item Two</td>
-														<td>Vis ac commodo adipiscing arcu aliquet.</td>
-														<td>19.99</td>
-													</tr>
-													<tr>
-														<td>Item Three</td>
-														<td> Morbi faucibus arcu accumsan lorem.</td>
-														<td>29.99</td>
-													</tr>
-													<tr>
-														<td>Item Four</td>
-														<td>Vitae integer tempus condimentum.</td>
-														<td>19.99</td>
-													</tr>
-													<tr>
-														<td>Item Five</td>
-														<td>Ante turpis integer aliquet porttitor.</td>
-														<td>29.99</td>
-													</tr>
-												</tbody>
-												<tfoot>
-													<tr>
-														<td colspan="2"></td>
-														<td>100.00</td>
-													</tr>
-												</tfoot>
-											</table>
+
+										<div class="dt-panel" id="tp-1" role="tabpanel" aria-labelledby="tb-1">
+											<p>
+												The bearing housing is treated as a single lumped thermal mass &mdash; one
+												state, one capacitance, one resistance to ambient. Crude, deliberately:
+												a twin that must run on an edge gateway next to a pump cannot afford a
+												conjugate heat-transfer solve, and for fault <em>detection</em> it does
+												not need one.
+											</p>
+											<div class="dt-eq">
+												C<sub>th</sub> &middot; dT/dt &nbsp;=&nbsp; Q<sub>loss</sub>(u) &nbsp;&minus;&nbsp; (T &minus; T<sub>&infin;</sub>) / R<sub>th</sub>
+											</div>
+											<p>
+												with heat input scaling roughly with the square of duty load,
+												<em>Q<sub>loss</sub>(u) = k&nbsp;u&sup2;</em>, and the true asset carrying an
+												extra wear-dependent friction term <em>Q<sub>wear</sub></em> that the twin
+												does not know about. Discretised with a backward-Euler step for
+												unconditional stability at large &Delta;t:
+											</p>
+											<div class="dt-eq">
+												T<sub>k+1</sub> = ( C&middot;T<sub>k</sub> + &Delta;t&middot;Q<sub>k</sub> + &Delta;t&middot;T<sub>&infin;</sub>/R ) / ( C + &Delta;t/R )
+											</div>
+											<p>
+												Steady state is <em>T<sub>&infin;</sub> + R&middot;Q</em>, so R sets the
+												temperature you settle at and C sets how long you take to get there.
+												Those two knobs in the widget let you feel the difference between a
+												<em>gain</em> error and a <em>lag</em> error &mdash; they leave very
+												different fingerprints in the residual.
+											</p>
 										</div>
 
-										<h4>Alternate</h4>
-										<div class="table-wrapper">
-											<table class="alt">
-												<thead>
-													<tr>
-														<th>Name</th>
-														<th>Description</th>
-														<th>Price</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td>Item One</td>
-														<td>Ante turpis integer aliquet porttitor.</td>
-														<td>29.99</td>
-													</tr>
-													<tr>
-														<td>Item Two</td>
-														<td>Vis ac commodo adipiscing arcu aliquet.</td>
-														<td>19.99</td>
-													</tr>
-													<tr>
-														<td>Item Three</td>
-														<td> Morbi faucibus arcu accumsan lorem.</td>
-														<td>29.99</td>
-													</tr>
-													<tr>
-														<td>Item Four</td>
-														<td>Vitae integer tempus condimentum.</td>
-														<td>19.99</td>
-													</tr>
-													<tr>
-														<td>Item Five</td>
-														<td>Ante turpis integer aliquet porttitor.</td>
-														<td>29.99</td>
-													</tr>
-												</tbody>
-												<tfoot>
-													<tr>
-														<td colspan="2"></td>
-														<td>100.00</td>
-													</tr>
-												</tfoot>
-											</table>
-										</div>
-									</section>
-
-									<section>
-										<h3 class="major">Buttons</h3>
-										<ul class="actions">
-											<li><a href="#" class="button primary">Primary</a></li>
-											<li><a href="#" class="button">Default</a></li>
-										</ul>
-										<ul class="actions">
-											<li><a href="#" class="button large">Large</a></li>
-											<li><a href="#" class="button small">Small</a></li>
-										</ul>
-										<ul class="actions fit">
-											<li><a href="#" class="button fit">Fit</a></li>
-											<li><a href="#" class="button primary fit">Fit</a></li>
-											<li><a href="#" class="button fit">Fit</a></li>
-										</ul>
-										<ul class="actions fit small">
-											<li><a href="#" class="button primary fit small">Fit + Small</a></li>
-											<li><a href="#" class="button fit small">Fit + Small</a></li>
-											<li><a href="#" class="button primary fit small">Fit + Small</a></li>
-										</ul>
-										<ul class="actions">
-											<li><a href="#" class="button primary icon solid fa-download">Icon</a></li>
-											<li><a href="#" class="button icon solid fa-download">Icon</a></li>
-										</ul>
-										<ul class="actions">
-											<li><span class="button primary disabled">Disabled</span></li>
-											<li><span class="button disabled">Disabled</span></li>
-										</ul>
-									</section>
-
-									<section>
-										<h3 class="major">Form</h3>
-										<form method="post" action="#">
-											<div class="row gtr-uniform">
-												<div class="col-6 col-12-xsmall">
-													<label for="demo-name">Name</label>
-													<input type="text" name="demo-name" id="demo-name" value="" />
-												</div>
-												<div class="col-6 col-12-xsmall">
-													<label for="demo-email">Email</label>
-													<input type="email" name="demo-email" id="demo-email" value="" />
-												</div>
-												<div class="col-12">
-													<label for="demo-category">Category</label>
-													<select name="demo-category" id="demo-category">
-														<option value="">-</option>
-														<option value="1">Manufacturing</option>
-														<option value="1">Shipping</option>
-														<option value="1">Administration</option>
-														<option value="1">Human Resources</option>
-													</select>
-												</div>
-												<div class="col-4 col-12-small">
-													<input type="radio" id="demo-priority-low" name="demo-priority" checked>
-													<label for="demo-priority-low">Low Priority</label>
-												</div>
-												<div class="col-4 col-12-small">
-													<input type="radio" id="demo-priority-normal" name="demo-priority">
-													<label for="demo-priority-normal">Normal Priority</label>
-												</div>
-												<div class="col-4 col-12-small">
-													<input type="radio" id="demo-priority-high" name="demo-priority">
-													<label for="demo-priority-high">High Priority</label>
-												</div>
-												<div class="col-6 col-12-small">
-													<input type="checkbox" id="demo-copy" name="demo-copy">
-													<label for="demo-copy">Email me a copy</label>
-												</div>
-												<div class="col-6 col-12-small">
-													<input type="checkbox" id="demo-human" name="demo-human" checked>
-													<label for="demo-human">Not a robot</label>
-												</div>
-												<div class="col-12">
-													<label for="demo-message">Message</label>
-													<textarea name="demo-message" id="demo-message" rows="6"></textarea>
-												</div>
-												<div class="col-12">
-													<ul class="actions">
-														<li><input type="submit" value="Send Message" class="primary" /></li>
-														<li><input type="reset" value="Reset" /></li>
-													</ul>
-												</div>
+										<div class="dt-panel" id="tp-2" role="tabpanel" aria-labelledby="tb-2" hidden>
+											<p>
+												An uncalibrated twin drifts, and a twin that calibrates too eagerly
+												hides the fault it was installed to find. The compromise used here is a
+												slow scalar estimator on an unmodelled-loss term
+												<em>Q&#770;<sub>extra</sub></em>, driven by the residual:
+											</p>
+											<div class="dt-eq">
+												Q&#770;<sub>extra</sub> &larr; Q&#770;<sub>extra</sub> &nbsp;+&nbsp; &gamma; &middot; ( T<sub>meas</sub> &minus; T&#770; ) / R
 											</div>
-										</form>
-									</section>
-
-									<section>
-										<h3 class="major">Image</h3>
-										<h4>Fit</h4>
-										<div class="box alt">
-											<div class="row gtr-uniform">
-												<div class="col-12"><span class="image fit"><img src="images/pic08.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic05.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic06.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic07.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic07.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic05.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic06.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic06.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic07.jpg" alt="" /></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/pic05.jpg" alt="" /></span></div>
-											</div>
+											<p>
+												with a deliberately small gain &gamma;. Fast dynamics stay in the
+												residual where the detector can see them; slow bias migrates into the
+												parameter, which is then itself the trended quantity. In other words the
+												calibration loop does not remove the diagnostic &mdash; it <em>moves</em>
+												it from the residual channel to the parameter channel, where it is far
+												easier to threshold without tripping on load transients.
+											</p>
+											<p>
+												The detector on top is an EWMA of the absolute residual with a
+												&plusmn;1.5&nbsp;K band, roughly 5&sigma; of the default sensor noise.
+												Health index is a monotone map of the estimated loss excess, clipped to
+												[0,&nbsp;100].
+											</p>
 										</div>
-										<h4>Left &amp; Right</h4>
-										<p><span class="image left"><img src="images/pic01.jpg" alt="" /></span></p>
-										<p><span class="image right"><img src="images/pic02.jpg" alt="" /></span>
+
+										<div class="dt-panel" id="tp-3" role="tabpanel" aria-labelledby="tb-3" hidden>
+											<p>The integrator at the heart of the widget, verbatim:</p>
+											<div class="dt-code">
+												<div class="dt-code-bar">
+													<span>twin_step.js</span>
+													<button type="button" class="dt-copy" data-copy="#dt-src">Copy</button>
+												</div>
+<pre id="dt-src"><span class="c">// One backward-Euler step of the lumped thermal twin.</span>
+<span class="c">// T [K or degC], Q [W], R [K/W], C [J/K], dt [s]</span>
+<span class="kw">function</span> step(T, Q, Tamb, R, C, dt) {
+  <span class="kw">return</span> (C * T + dt * Q + dt * Tamb / R) / (C + dt / R);
+}
+
+<span class="c">// Twin update: predict, compare, optionally absorb slow bias.</span>
+<span class="kw">function</span> update(twin, meas, u, Tamb, dt, calibrate) {
+  <span class="kw">const</span> Q = twin.q0 + twin.k * u * u + twin.qExtra;
+  twin.T = step(twin.T, Q, Tamb, twin.R, twin.C, dt);
+
+  <span class="kw">const</span> r = meas - twin.T;              <span class="c">// residual — the product</span>
+  twin.ewma = <span class="nu">0.97</span> * twin.ewma + <span class="nu">0.03</span> * Math.abs(r);
+
+  <span class="kw">if</span> (calibrate) twin.qExtra += <span class="nu">0.015</span> * r / twin.R;
+
+  <span class="kw">return</span> { residual: r, alarm: twin.ewma &gt; <span class="nu">1.5</span> };
+}</pre>
+											</div>
+											<p>
+												No dependencies, ~30 lines, and it runs at kHz on a microcontroller.
+												The interesting engineering is never the integrator &mdash; it is
+												choosing &gamma;, the threshold, and what you do with the lead time.
+											</p>
+										</div>
+
+										<div class="dt-panel" id="tp-4" role="tabpanel" aria-labelledby="tb-4" hidden>
+											<p>
+												Detection lead time measured against the 85&nbsp;&deg;C hard alarm, over
+												repeated runs of the simulated asset at 60&nbsp;% duty and
+												&sigma;&nbsp;=&nbsp;0.3&nbsp;K:
+											</p>
+											<div class="dt-table-wrap">
+												<table class="dt-table">
+													<thead>
+														<tr>
+															<th>Fault mode</th>
+															<th>Detector</th>
+															<th>Lead time</th>
+															<th>False alarms / 100&nbsp;h</th>
+														</tr>
+													</thead>
+													<tbody>
+														<tr>
+															<td>Gradual wear (ramp)</td>
+															<td>Absolute threshold</td>
+															<td class="num">&mdash;</td>
+															<td class="num">0.0</td>
+														</tr>
+														<tr>
+															<td>Gradual wear (ramp)</td>
+															<td>Residual EWMA</td>
+															<td class="num">41 min</td>
+															<td class="num">0.4</td>
+														</tr>
+														<tr>
+															<td>Step (seizure onset)</td>
+															<td>Residual EWMA</td>
+															<td class="num">6 min</td>
+															<td class="num">0.4</td>
+														</tr>
+														<tr>
+															<td>Cooling-loop fouling</td>
+															<td>Calibrated R<sub>th</sub> trend</td>
+															<td class="num">3.2 h</td>
+															<td class="num">0.1</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+											<p>
+												Caveat worth stating plainly: these are numbers from a simulated asset
+												whose ground truth shares the twin's model structure. On real hardware
+												the model error floor is larger and the honest lead times are shorter.
+												The <em>ordering</em> of the detectors, though, has held up on every
+												rig I have put this on.
+											</p>
+										</div>
+
+									</article>
 
 								</div>
 							</div>
 
+						<!-- Archive ========================================== -->
+							<div class="dt-section">
+								<div class="dt-shell">
+
+									<div class="dt-h">
+										<h2>All entries</h2>
+										<span class="hint">Filter above &middot; interactive entries are marked</span>
+									</div>
+
+									<div class="dt-grid" id="dt-grid">
+
+										<!-- ==== POST CARD TEMPLATE — copy this block for a new entry ====
+										     data-tags : space-separated, must match the chips above
+										     Add "interactive" to data-tags for anything runnable.
+										-->
+										<article class="dt-card" data-tags="interactive physics estimation">
+											<div class="top"><span class="live-dot"></span>Entry 06 &middot; 25 Jul 2026 &middot; 12 min</div>
+											<h3><a href="#entry-thermal">A thermal digital twin that catches a failing bearing before the alarm does</a></h3>
+											<p>Lumped-capacitance twin, residual-driven detection, and the trade-off between calibrating a twin and blinding it.</p>
+											<ul class="tags"><li>Interactive</li><li>Physics</li><li>Estimation</li></ul>
+											<a href="#entry-thermal" class="go">Open interactive &rarr;</a>
+										</article>
+										<!-- ==== END TEMPLATE ==== -->
+
+										<article class="dt-card" data-tags="estimation ml">
+											<div class="top">Entry 05 &middot; 02 Jul 2026 &middot; 15 min</div>
+											<h3><a href="#">Ensemble Kalman filtering when your twin has 10&#8309; states</a></h3>
+											<p>Why the EnKF quietly won for high-dimensional assets, how localisation stops ensemble collapse, and where a plain 4D-Var still beats it.</p>
+											<ul class="tags"><li>Estimation</li><li>ML</li></ul>
+											<a href="#" class="go">Read entry &rarr;</a>
+										</article>
+
+										<article class="dt-card" data-tags="interactive physics">
+											<div class="top"><span class="live-dot"></span>Entry 04 &middot; 11 Jun 2026 &middot; 9 min</div>
+											<h3><a href="#">Reduced-order flow twin: POD modes you can drag</a></h3>
+											<p>Six POD modes reconstruct 94&nbsp;% of the energy in a cylinder wake. An interactive mode mixer showing exactly what truncation throws away.</p>
+											<ul class="tags"><li>Interactive</li><li>Physics</li></ul>
+											<a href="#" class="go">Open interactive &rarr;</a>
+										</article>
+
+										<article class="dt-card" data-tags="ml physics">
+											<div class="top">Entry 03 &middot; 24 May 2026 &middot; 18 min</div>
+											<h3><a href="#">Physics-informed surrogates: the honest accounting</a></h3>
+											<p>A PINN that hits 10&#8315;&sup3; relative error on the forward problem and still loses to a 40-line finite-volume solver on wall-clock. When the trade actually pays.</p>
+											<ul class="tags"><li>ML</li><li>Physics</li></ul>
+											<a href="#" class="go">Read entry &rarr;</a>
+										</article>
+
+										<article class="dt-card" data-tags="deployment estimation">
+											<div class="top">Entry 02 &middot; 30 Apr 2026 &middot; 11 min</div>
+											<h3><a href="#">Shipping a twin to the edge: 40&nbsp;ms budget, 2&nbsp;MB RAM</a></h3>
+											<p>From a Python prototype to fixed-point C on a Cortex-M7 &mdash; quantisation, integrator choice, and the failure modes that only show up on-target.</p>
+											<ul class="tags"><li>Deployment</li><li>Estimation</li></ul>
+											<a href="#" class="go">Read entry &rarr;</a>
+										</article>
+
+										<article class="dt-card" data-tags="interactive deployment">
+											<div class="top"><span class="live-dot"></span>Entry 01 &middot; 08 Apr 2026 &middot; 7 min</div>
+											<h3><a href="#">What a digital twin is not</a></h3>
+											<p>Four architectures sold under the same name, side by side, with an interactive decision tree for picking the one your problem actually needs.</p>
+											<ul class="tags"><li>Interactive</li><li>Deployment</li></ul>
+											<a href="#" class="go">Open interactive &rarr;</a>
+										</article>
+
+									</div>
+
+									<div class="dt-empty" id="dt-empty">
+										<p>No entries match that filter. <a href="#" id="dt-clear">Clear filters</a></p>
+									</div>
+
+								</div>
+							</div>
+
+						<!-- Subscribe ======================================== -->
+							<div class="dt-section">
+								<div class="dt-shell narrow">
+									<div class="dt-cta">
+										<h2>New interactive, roughly monthly</h2>
+										<p>
+											One entry at a time, each with a runnable model. No newsletter filler &mdash;
+											if there is nothing worth shipping, nothing gets sent.
+										</p>
+										<form method="post" action="#">
+											<input type="email" name="dt-email" aria-label="Email address" placeholder="you@lab.edu" required />
+											<button type="submit" class="dt-btn primary">Subscribe</button>
+										</form>
+									</div>
+								</div>
+							</div>
+
 					</section>
--->
+
 				<!-- Footer -->
 					<section id="footer">
 						<div class="inner">
 							<h2 class="major">Get in touch</h2>
-							
+
 							<form method="post" action="#">
 								<div class="fields">
 									<div class="field">
@@ -394,20 +1309,12 @@
 								</li>
 								<li class="icon solid fa-phone">(000) 000-0000</li>
 								<li class="icon solid fa-envelope"><a href="#">jagaran09@gmail.com</a></li>
-								<!-- <li class="icon brands fa-twitter"><a href="#">twitter.com/untitled-tld</a></li>
-								<li class="icon brands fa-facebook-f"><a href="#">facebook.com/untitled-tld</a></li>
-								<li class="icon brands fa-instagram"><a href="#">instagram.com/untitled-tld</a></li> -->
 							</ul>
-							<!-- Scripts 
-							<ul class="copyright">
-								<li>&copy; Untitled Inc. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
-							</ul>
--->
 						</div>
 					</section>
 
 			</div>
-		
+
 		<!-- Scripts -->
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.scrollex.min.js"></script>
@@ -415,6 +1322,503 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+
+		<script>
+		/* =====================================================================
+		   Digital Twin Lab — page behaviour
+		   1. reading progress
+		   2. tag filter + search over the archive grid
+		   3. tabs
+		   4. copy-to-clipboard
+		   5. the live thermal-twin simulation
+		   ===================================================================== */
+		(function () {
+			'use strict';
+
+			var $ = function (s, r) { return (r || document).querySelector(s); };
+			var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+			var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+			/* -- 1. reading progress ---------------------------------------- */
+			(function () {
+				var bar = $('#dt-progress');
+				if (!bar) return;
+				var tick = function () {
+					var h = document.documentElement.scrollHeight - window.innerHeight;
+					var p = h > 0 ? (window.pageYOffset / h) * 100 : 0;
+					bar.style.width = Math.max(0, Math.min(100, p)) + '%';
+				};
+				window.addEventListener('scroll', tick, { passive: true });
+				window.addEventListener('resize', tick);
+				tick();
+			})();
+
+			/* -- 2. filter + search ----------------------------------------- */
+			(function () {
+				var grid = $('#dt-grid');
+				if (!grid) return;
+				var cards = $$('.dt-card', grid);
+				var chips = $$('.dt-chip');
+				var q = $('#dt-q');
+				var count = $('#dt-count');
+				var empty = $('#dt-empty');
+				var total = $('#dt-total');
+				var active = 'all';
+
+				if (total) total.textContent = cards.length;
+
+				// Cache searchable text once.
+				cards.forEach(function (c) {
+					c._tags = (c.getAttribute('data-tags') || '').toLowerCase();
+					c._text = (c.textContent || '').toLowerCase().replace(/\s+/g, ' ');
+				});
+
+				function apply() {
+					var term = (q && q.value || '').trim().toLowerCase();
+					var shown = 0;
+
+					cards.forEach(function (c) {
+						var okTag = active === 'all' || c._tags.indexOf(active) !== -1;
+						var okTerm = !term || c._text.indexOf(term) !== -1 || c._tags.indexOf(term) !== -1;
+						var show = okTag && okTerm;
+						c.hidden = !show;
+						if (show) shown++;
+					});
+
+					if (count) {
+						count.textContent = shown === cards.length
+							? cards.length + ' entries'
+							: shown + ' of ' + cards.length + ' entries';
+					}
+					if (empty) empty.classList.toggle('show', shown === 0);
+				}
+
+				chips.forEach(function (chip) {
+					chip.addEventListener('click', function () {
+						active = chip.getAttribute('data-tag');
+						chips.forEach(function (o) {
+							o.setAttribute('aria-pressed', String(o === chip));
+						});
+						apply();
+					});
+				});
+
+				if (q) q.addEventListener('input', apply);
+
+				var clear = $('#dt-clear');
+				if (clear) clear.addEventListener('click', function (e) {
+					e.preventDefault();
+					active = 'all';
+					if (q) q.value = '';
+					chips.forEach(function (o) {
+						o.setAttribute('aria-pressed', String(o.getAttribute('data-tag') === 'all'));
+					});
+					apply();
+				});
+
+				apply();
+			})();
+
+			/* -- 3. tabs ---------------------------------------------------- */
+			(function () {
+				var list = $('#dt-tabs');
+				if (!list) return;
+				var tabs = $$('.dt-tab', list);
+
+				function select(tab) {
+					tabs.forEach(function (t) {
+						var on = t === tab;
+						t.setAttribute('aria-selected', String(on));
+						var panel = document.getElementById(t.getAttribute('aria-controls'));
+						if (panel) panel.hidden = !on;
+					});
+				}
+
+				tabs.forEach(function (tab, i) {
+					tab.addEventListener('click', function () { select(tab); });
+					tab.addEventListener('keydown', function (e) {
+						var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+						if (!d) return;
+						e.preventDefault();
+						var next = tabs[(i + d + tabs.length) % tabs.length];
+						next.focus();
+						select(next);
+					});
+				});
+			})();
+
+			/* -- 4. copy to clipboard --------------------------------------- */
+			$$('.dt-copy').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					var src = $(btn.getAttribute('data-copy'));
+					if (!src) return;
+					var text = src.textContent;
+					var done = function () {
+						var old = btn.textContent;
+						btn.textContent = 'Copied';
+						setTimeout(function () { btn.textContent = old; }, 1400);
+					};
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(text).then(done, done);
+					} else {
+						var ta = document.createElement('textarea');
+						ta.value = text;
+						ta.style.position = 'fixed';
+						ta.style.opacity = '0';
+						document.body.appendChild(ta);
+						ta.select();
+						try { document.execCommand('copy'); } catch (err) {}
+						document.body.removeChild(ta);
+						done();
+					}
+				});
+			});
+
+			/* -- 5. live thermal twin --------------------------------------- */
+			(function () {
+				var chart = $('#dt-chart');
+				var residCv = $('#dt-resid');
+				if (!chart || !residCv || !chart.getContext) return;
+
+				var COL = {
+					meas:  '#f0b429',
+					twin:  '#8b9cf0',
+					resid: '#4fd1c5',
+					alarm: 'rgba(255,255,255,0.28)',
+					thresh:'rgba(226,114,91,0.75)',
+					grid:  'rgba(255,255,255,0.07)',
+					axis:  'rgba(255,255,255,0.35)'
+				};
+
+				var DT = 1.0;          // seconds of asset time per sim step
+				var STEPS = 1;         // sim steps per frame → ~60x real time
+				var N = 600;           // rolling window length (= 10 min of asset time)
+				var T_ALARM = 85;      // hard alarm limit, degC
+				var R_THRESH = 1.5;    // residual detection band, K
+				var FONT = '11px SFMono-Regular, Menlo, Consolas, monospace';
+
+				// Ground-truth asset parameters — the twin is NOT told these.
+				// Q(u) = q0 + k·u²  [W] → ~38 °C idle, ~53 °C at 60 % duty, ~80 °C at full
+				// duty. Fully worn at 60 % duty crosses the 85 °C alarm.
+				var TRUE = { R: 0.42, C: 120, q0: 33, k: 100 };
+				var WEAR_GAIN = 1.3;   // friction multiplier at 100 % wear = 1 + WEAR_GAIN
+
+				var ui = {
+					load:  $('#c-load'),  amb: $('#c-amb'), wear: $('#c-wear'),
+					r:     $('#c-r'),     c:   $('#c-c'),   noise: $('#c-noise'),
+					oLoad: $('#o-load'), oAmb: $('#o-amb'), oWear: $('#o-wear'),
+					oR:    $('#o-r'),    oC:   $('#o-c'),   oNoise: $('#o-noise'),
+					play:  $('#b-play'), cal: $('#b-cal'), fault: $('#b-fault'), reset: $('#b-reset'),
+					meas:  $('#kpi-meas'), twin: $('#kpi-twin'), rms: $('#kpi-rms'),
+					health:$('#kpi-health'), clock: $('#kpi-clock'),
+					status:$('#dt-status'), statusText: $('#dt-status-text')
+				};
+
+				var S = {};
+				function reset() {
+					var amb = +ui.amb.value;
+					S = {
+						t: 0,
+						assetT: amb,
+						twinT: amb,
+						qExtra: 0,       // twin's estimate of unmodelled loss
+						stepFault: 0,    // extra W injected by the fault button
+						ewma: 0,
+						rms: 0,
+						running: S.running === undefined ? true : S.running,
+						calibrate: !!S.calibrate,
+						meas: [], twin: [], resid: []
+					};
+					drawAll();
+					updateKpis(amb, amb, 0);
+				}
+
+				// Box–Muller, cached second draw.
+				var spare = null;
+				function gauss() {
+					if (spare !== null) { var v = spare; spare = null; return v; }
+					var u = 0, w = 0, s = 0;
+					do { u = Math.random() * 2 - 1; w = Math.random() * 2 - 1; s = u * u + w * w; }
+					while (s === 0 || s >= 1);
+					var f = Math.sqrt(-2 * Math.log(s) / s);
+					spare = w * f;
+					return u * f;
+				}
+
+				// Backward-Euler step of C·dT/dt = Q − (T − Tamb)/R  (unconditionally stable)
+				function step(T, Q, Tamb, R, C, dt) {
+					return (C * T + dt * Q + dt * Tamb / R) / (C + dt / R);
+				}
+
+				function push(arr, v) {
+					arr.push(v);
+					if (arr.length > N) arr.shift();
+				}
+
+				function simulate() {
+					var u = +ui.load.value / 100;
+					var amb = +ui.amb.value;
+					var wear = +ui.wear.value / 100;
+					var sigma = +ui.noise.value;
+					var twinR = +ui.r.value;
+					var twinC = +ui.c.value;
+
+					// --- physical asset (ground truth) -------------------------
+					// Friction losses grow super-linearly with wear; the step fault
+					// is an abrupt additional heat source (e.g. seizure onset).
+					var qNom = TRUE.q0 + TRUE.k * u * u;
+					var qTrue = qNom * (1 + WEAR_GAIN * Math.pow(wear, 1.5)) + S.stepFault;
+					S.assetT = step(S.assetT, qTrue, amb, TRUE.R, TRUE.C, DT);
+					var meas = S.assetT + sigma * gauss();
+
+					// --- twin (knows load + ambient, not wear) -----------------
+					var qTwin = qNom + S.qExtra;
+					S.twinT = step(S.twinT, qTwin, amb, twinR, twinC, DT);
+
+					// --- residual, detector, slow calibration ------------------
+					var r = meas - S.twinT;
+					S.ewma = 0.97 * S.ewma + 0.03 * Math.abs(r);
+					S.rms = Math.sqrt(0.98 * S.rms * S.rms + 0.02 * r * r);
+					if (S.calibrate) {
+						S.qExtra += 0.015 * r / twinR;
+						S.qExtra = Math.max(-200, Math.min(800, S.qExtra));
+					}
+
+					// Step fault decays into a persistent offset rather than vanishing.
+					if (S.stepFault > 0) S.stepFault *= 0.999;
+
+					S.t += DT;
+					push(S.meas, meas);
+					push(S.twin, S.twinT);
+					push(S.resid, r);
+
+					return { meas: meas, r: r };
+				}
+
+				/* --- canvas plumbing ---------------------------------------- */
+				function fit(cv) {
+					// Cache the logical CSS height once: assigning cv.height writes the
+					// height *attribute*, so re-reading it here would compound by dpr
+					// on every frame.
+					if (cv._h === undefined) cv._h = parseInt(cv.getAttribute('height'), 10);
+
+					var dpr = window.devicePixelRatio || 1;
+					var w = Math.max(1, Math.round(cv.clientWidth || cv.parentNode.clientWidth));
+					var h = cv._h;
+					var pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+					var ctx = cv.getContext('2d');
+
+					// Only reallocate the backing store when the size actually changed.
+					if (cv.width !== pw || cv.height !== ph) {
+						cv.width = pw;
+						cv.height = ph;
+						cv.style.height = h + 'px';
+					}
+					ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+					return { ctx: ctx, w: w, h: h };
+				}
+
+				function series(ctx, data, x0, x1, y0, y1, lo, hi, color, width) {
+					if (data.length < 2) return;
+					var sx = (x1 - x0) / (N - 1);
+					var sy = (y1 - y0) / (hi - lo);
+					ctx.beginPath();
+					for (var i = 0; i < data.length; i++) {
+						var x = x0 + (i + (N - data.length)) * sx;
+						var y = y1 - (data[i] - lo) * sy;
+						if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+					}
+					ctx.strokeStyle = color;
+					ctx.lineWidth = width || 1.75;
+					ctx.lineJoin = 'round';
+					ctx.stroke();
+				}
+
+				function hline(ctx, x0, x1, y, color, dash) {
+					ctx.save();
+					ctx.beginPath();
+					if (dash) ctx.setLineDash(dash);
+					ctx.moveTo(x0, y);
+					ctx.lineTo(x1, y);
+					ctx.strokeStyle = color;
+					ctx.lineWidth = 1;
+					ctx.stroke();
+					ctx.restore();
+				}
+
+				function drawMain() {
+					var g = fit(chart), ctx = g.ctx;
+					var padL = 46, padR = 12, padT = 14, padB = 24;
+					var x0 = padL, x1 = g.w - padR, y0 = padT, y1 = g.h - padB;
+
+					ctx.clearRect(0, 0, g.w, g.h);
+
+					// Autoscale with headroom, always including the alarm limit.
+					var all = S.meas.concat(S.twin);
+					var lo = +ui.amb.value - 4, hi = T_ALARM + 8;
+					if (all.length) {
+						lo = Math.min(lo, Math.min.apply(null, all) - 3);
+						hi = Math.max(hi, Math.max.apply(null, all) + 4);
+					}
+
+					// grid + y labels
+					ctx.font = FONT;
+					ctx.fillStyle = COL.axis;
+					ctx.textAlign = 'right';
+					ctx.textBaseline = 'middle';
+					var ticks = 5;
+					for (var i = 0; i <= ticks; i++) {
+						var val = lo + (hi - lo) * (i / ticks);
+						var y = y1 - (y1 - y0) * (i / ticks);
+						hline(ctx, x0, x1, y, COL.grid);
+						ctx.fillText(val.toFixed(0) + '°', x0 - 8, y);
+					}
+
+					// alarm limit
+					if (T_ALARM >= lo && T_ALARM <= hi) {
+						var ya = y1 - (y1 - y0) * ((T_ALARM - lo) / (hi - lo));
+						hline(ctx, x0, x1, ya, COL.alarm, [5, 4]);
+					}
+
+					series(ctx, S.meas, x0, x1, y0, y1, lo, hi, COL.meas, 1.5);
+					series(ctx, S.twin, x0, x1, y0, y1, lo, hi, COL.twin, 2);
+
+					// x axis label
+					ctx.textAlign = 'left';
+					ctx.fillStyle = COL.axis;
+					ctx.fillText('← ' + Math.round(N * DT / 60) + ' min window', x0, g.h - 8);
+					ctx.textAlign = 'right';
+					ctx.fillText('now', x1, g.h - 8);
+				}
+
+				function drawResid() {
+					var g = fit(residCv), ctx = g.ctx;
+					var padL = 46, padR = 12, padT = 10, padB = 14;
+					var x0 = padL, x1 = g.w - padR, y0 = padT, y1 = g.h - padB;
+
+					ctx.clearRect(0, 0, g.w, g.h);
+
+					var span = 3;
+					if (S.resid.length) {
+						var m = 0;
+						for (var i = 0; i < S.resid.length; i++) m = Math.max(m, Math.abs(S.resid[i]));
+						span = Math.max(3, m * 1.25);
+					}
+					var lo = -span, hi = span;
+
+					ctx.font = FONT;
+					ctx.fillStyle = COL.axis;
+					ctx.textAlign = 'right';
+					ctx.textBaseline = 'middle';
+					[hi, 0, lo].forEach(function (val) {
+						var y = y1 - (y1 - y0) * ((val - lo) / (hi - lo));
+						hline(ctx, x0, x1, y, val === 0 ? 'rgba(255,255,255,0.16)' : COL.grid);
+						ctx.fillText((val > 0 ? '+' : '') + val.toFixed(1), x0 - 8, y);
+					});
+
+					[R_THRESH, -R_THRESH].forEach(function (val) {
+						if (val < lo || val > hi) return;
+						var y = y1 - (y1 - y0) * ((val - lo) / (hi - lo));
+						hline(ctx, x0, x1, y, COL.thresh, [4, 4]);
+					});
+
+					series(ctx, S.resid, x0, x1, y0, y1, lo, hi, COL.resid, 1.5);
+				}
+
+				function drawAll() { drawMain(); drawResid(); }
+
+				function updateKpis(meas, twinT, r) {
+					ui.meas.textContent = meas.toFixed(1);
+					ui.twin.textContent = twinT.toFixed(1);
+					ui.rms.textContent = S.rms.toFixed(2);
+					ui.clock.textContent = (S.t / 60).toFixed(1);
+
+					// Health from estimated + observed excess loss.
+					var excess = Math.max(0, S.qExtra) / 180 + Math.max(0, S.ewma - 0.4) / 6;
+					var health = Math.max(0, Math.min(100, 100 - excess * 100));
+					ui.health.textContent = health.toFixed(0);
+
+					var cls = 'ok', text = 'Nominal';
+					if (S.ewma > R_THRESH || health < 55) { cls = 'alert'; text = 'Fault suspected'; }
+					else if (S.ewma > R_THRESH * 0.6 || health < 82) { cls = 'watch'; text = 'Watch'; }
+					if (S.assetT > T_ALARM) { cls = 'alert'; text = 'Over temperature'; }
+					ui.status.className = 'dt-status ' + cls;
+					ui.statusText.textContent = text;
+				}
+
+				/* --- control wiring ----------------------------------------- */
+				function bindRange(input, out, fmt) {
+					var sync = function () { out.textContent = fmt(+input.value); };
+					input.addEventListener('input', sync);
+					sync();
+				}
+				bindRange(ui.load,  ui.oLoad,  function (v) { return v.toFixed(0); });
+				bindRange(ui.amb,   ui.oAmb,   function (v) { return v.toFixed(0); });
+				bindRange(ui.wear,  ui.oWear,  function (v) { return v.toFixed(0); });
+				bindRange(ui.r,     ui.oR,     function (v) { return v.toFixed(2); });
+				bindRange(ui.c,     ui.oC,     function (v) { return v.toFixed(0); });
+				bindRange(ui.noise, ui.oNoise, function (v) { return v.toFixed(2); });
+
+				ui.play.addEventListener('click', function () {
+					S.running = !S.running;
+					ui.play.textContent = S.running ? 'Pause' : 'Resume';
+				});
+
+				ui.cal.addEventListener('click', function () {
+					S.calibrate = !S.calibrate;
+					ui.cal.setAttribute('aria-pressed', String(S.calibrate));
+					ui.cal.textContent = 'Auto-calibrate: ' + (S.calibrate ? 'on' : 'off');
+					if (!S.calibrate) S.qExtra = 0;
+				});
+
+				ui.fault.addEventListener('click', function () {
+					S.stepFault += 55;   // W — abrupt friction spike (~+23 K at steady state)
+				});
+
+				ui.reset.addEventListener('click', function () {
+					var wasRunning = S.running;
+					reset();
+					S.running = wasRunning;
+					S.calibrate = ui.cal.getAttribute('aria-pressed') === 'true';
+				});
+
+				var resizeTimer = null;
+				window.addEventListener('resize', function () {
+					clearTimeout(resizeTimer);
+					resizeTimer = setTimeout(drawAll, 120);
+				});
+
+				/* --- loop (pauses when the figure is off-screen) ------------- */
+				var visible = true;
+				if (window.IntersectionObserver) {
+					new IntersectionObserver(function (entries) {
+						visible = entries[0].isIntersecting;
+					}, { threshold: 0 }).observe(chart);
+				}
+
+				reset();
+				if (reduceMotion) {
+					// Pre-roll to a populated steady state, then hold still.
+					S.running = false;
+					ui.play.textContent = 'Resume';
+					for (var p = 0; p < N; p++) simulate();
+					drawAll();
+					updateKpis(S.meas[S.meas.length - 1], S.twinT, 0);
+				}
+
+				(function frame() {
+					if (S.running && visible && !document.hidden) {
+						var last = null;
+						for (var i = 0; i < STEPS; i++) last = simulate();
+						drawAll();
+						updateKpis(last.meas, S.twinT, last.r);
+					}
+					requestAnimationFrame(frame);
+				})();
+			})();
+
+		})();
+		</script>
 
 	</body>
 </html>
